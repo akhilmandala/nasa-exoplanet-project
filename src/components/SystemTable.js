@@ -1,53 +1,21 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Table from "react-bootstrap/Table";
-import Pagination from "react-bootstrap/Pagination";
-
-function PaginationControl({ currentPage, onPageSelect, maxPages }) {
-  let paginationElements;
-  if (currentPage === 1) {
-    paginationElements = (
-      <>
-        <Pagination.Item>{currentPage}</Pagination.Item>
-        <Pagination.Item>{currentPage + 1}</Pagination.Item>
-        <Pagination.Item>{currentPage + 2}</Pagination.Item>
-      </>
-    );
-  } else if (currentPage === maxPages) {
-    paginationElements = (
-      <>
-        <Pagination.Item>{currentPage - 2}</Pagination.Item>
-        <Pagination.Item>{currentPage - 1}</Pagination.Item>
-        <Pagination.Item>{currentPage}</Pagination.Item>
-      </>
-    );
-  } else {
-    paginationElements = (
-      <>
-        <Pagination.Item>{currentPage - 1}</Pagination.Item>
-        <Pagination.Item>{currentPage}</Pagination.Item>
-        <Pagination.Item>{currentPage + 1}</Pagination.Item>
-      </>
-    );
-  }
-
-  return (
-    <Pagination>
-      <Pagination.First></Pagination.First>
-      <Pagination.Prev></Pagination.Prev>
-      {paginationElements}
-      <Pagination.Next></Pagination.Next>
-      <Pagination.Last></Pagination.Last>
-    </Pagination>
-  );
-}
+import { PaginationControl } from "./PaginationControl";
 
 function SystemsTablePage() {
   const [currentExoplanetData, setCurrentExoplanetData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [
+    currentNumberViewedElements,
+    setCurrentNumberViewedElements,
+  ] = useState(20);
 
-  useEffect(() => {
+  const loadPage = (nextPage, numViewedElements) => {
     axios
-      .get("http://localhost:4000/systems?pagenum=0&elems=20")
+      .get(
+        `http://localhost:4000/systems?pagenum=${nextPage}&elems=${numViewedElements}`
+      )
       .then((res) => {
         const exoplanetRowData = res.data.map(
           ({ _id, pl_name, pl_rade, sy_dist, st_logg }) => ({
@@ -60,8 +28,16 @@ function SystemsTablePage() {
         );
 
         setCurrentExoplanetData(exoplanetRowData);
+        setCurrentPage(nextPage);
       })
       .catch((err) => console.log(err));
+  };
+  const paginationControl = (nextPage) => {
+    loadPage(nextPage, currentNumberViewedElements);
+  };
+
+  useEffect(() => {
+    loadPage(currentPage, currentNumberViewedElements);
   }, []);
 
   const tableEntries = currentExoplanetData.map(
@@ -76,17 +52,24 @@ function SystemsTablePage() {
   );
 
   return (
-    <Table striped bordered hover>
-      <thead>
-        <tr>
-          <th>Planet Name</th>
-          <th>Planet radius (Earth radius)</th>
-          <th>Planet distance (parsec)</th>
-          <th>Stellar Surface gravity (log10)</th>
-        </tr>
-      </thead>
-      <tbody>{tableEntries}</tbody>
-    </Table>
+    <>
+      <Table striped bordered hover>
+        <thead>
+          <tr>
+            <th>Planet Name</th>
+            <th>Planet radius (Earth radius)</th>
+            <th>Planet distance (parsec)</th>
+            <th>Stellar Surface gravity (log10)</th>
+          </tr>
+        </thead>
+        <tbody>{tableEntries}</tbody>
+      </Table>
+      <PaginationControl
+        currentPage={currentPage}
+        maxPages={50}
+        onPageSelect={paginationControl}
+      />
+    </>
   );
 }
 
